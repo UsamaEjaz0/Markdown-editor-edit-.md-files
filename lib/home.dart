@@ -19,6 +19,12 @@ class _MyHomePageState extends State<MyHomePage>
     _textEditingController = TextEditingController();
   }
 
+  void updateText(String text) {
+    setState(() {
+      this.text = text;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -59,9 +65,7 @@ class _MyHomePageState extends State<MyHomePage>
             decoration: InputDecoration(
                 border: InputBorder.none, hintText: "Write Markdown here..."),
             onChanged: (String text) {
-              setState(() {
-                this.text = text;
-              });
+              updateText(text);
             },
           ),
         ),
