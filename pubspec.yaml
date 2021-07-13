@@ -31,6 +31,9 @@ dependencies:
   flutter_markdown: ^0.5.1
   path_provider: ^2.0.2
   file_picker: 1.4.2
+  another_flushbar: ^1.10.24
+  flutter_speed_dial: ^4.1.0
+  share_extend: ^2.0.0
 
 dev_dependencies:
   flutter_test:

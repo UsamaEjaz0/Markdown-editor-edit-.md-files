@@ -2,14 +2,14 @@ import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 
 class FileUtils {
-  static Future<String> get _localPath async {
+  static Future<String> get localPath async {
     final directory = await getExternalStorageDirectory();
 
     return directory.path;
   }
 
   static Future<File> _localFile(String fileName) async {
-    final path = await _localPath;
+    final path = await localPath;
     print('$path/$fileName.md');
     return File('$path/$fileName.md');
   }

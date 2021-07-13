@@ -1,7 +1,11 @@
+import 'package:another_flushbar/flushbar.dart';
+import 'package:easy_markdown_editor/dialogs/file_name.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_extend/share_extend.dart';
 import 'utils/file_utils.dart';
 import 'dart:io';
 
@@ -15,25 +19,20 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
   TextEditingController _textEditingController;
   String text = "";
 
-  String _fileName;
   String _path;
-  Map<String, String> _paths;
   String _extension;
-  bool _loadingPath = false;
   bool _multiPick = false;
   bool _hasValidMime = false;
   FileType _pickingType;
+  String fileName = "file";
+  bool shareable = false;
 
   Future<void> _openFileExplorer() async {
     if (_pickingType != FileType.CUSTOM || _hasValidMime) {
-      setState(() => _loadingPath = true);
       try {
         if (_multiPick) {
           _path = null;
-          _paths = await FilePicker.getMultiFilePath(
-              type: _pickingType, fileExtension: _extension);
         } else {
-          _paths = null;
           _path = await FilePicker.getFilePath(
               type: _pickingType, fileExtension: _extension);
         }
@@ -42,10 +41,6 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
       }
       if (!mounted) return;
       setState(() {
-        _loadingPath = false;
-        _fileName = _path != null
-            ? _path.split('/').last
-            : _paths != null ? _paths.keys.toString() : '...';
       });
     }
   }
@@ -62,6 +57,92 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
       this.text = text;
     });
   }
+
+  Future<void> setFileName(String fname) async{
+    setState(() {
+      fileName = fname;
+      shareable = true;
+    });
+    if (fileName.isNotEmpty){
+      await FileUtils.saveToFile(fileName, text);
+      Flushbar(
+        messageText: Text(
+          "Saved at: ${await FileUtils.localPath}/$fileName.md",
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontFamily: "Montserrat",
+            fontStyle: FontStyle.normal,
+            fontWeight: FontWeight.w500,
+            fontSize: 14.0,
+            color: Colors.white,
+          ),
+        ),
+        duration: Duration(seconds: 3),
+        flushbarStyle: FlushbarStyle.FLOATING,
+        margin: EdgeInsets.all(20),
+        borderRadius: BorderRadius.circular(8),
+        backgroundColor: Colors.black,
+      )..show(context);
+    }else{
+      Flushbar(
+        messageText: Text(
+          "Please provide a valid file name.",
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontFamily: "Montserrat",
+            fontStyle: FontStyle.normal,
+            fontWeight: FontWeight.w500,
+            fontSize: 14.0,
+            color: Colors.white,
+          ),
+        ),
+        duration: Duration(seconds: 1),
+        flushbarStyle: FlushbarStyle.FLOATING,
+        margin: EdgeInsets.all(20),
+        borderRadius: BorderRadius.circular(8),
+        backgroundColor: Colors.black,
+      )..show(context);
+    }
+  }
+  void share() async {
+    await showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return FileNameDialog(save: setFileName,);
+        });
+    if (shareable){
+      File testFile = new File("${await FileUtils.localPath}/$fileName.md");
+      if (!await testFile.exists()) {
+        Flushbar(
+          messageText: Text(
+            "Error, file not found.",
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontFamily: "Montserrat",
+              fontStyle: FontStyle.normal,
+              fontWeight: FontWeight.w500,
+              fontSize: 14.0,
+              color: Colors.white,
+            ),
+          ),
+          duration: Duration(seconds: 1),
+          flushbarStyle: FlushbarStyle.FLOATING,
+          margin: EdgeInsets.all(20),
+          borderRadius: BorderRadius.circular(8),
+          backgroundColor: Colors.black,
+        )..show(context);
+      }
+      else{
+        ShareExtend.share(testFile.path, "file");
+      }
+    }
+    setState(() {
+      shareable = false;
+    });
+
+
+  }
+
   Future<void> handleClick(String value) async {
     switch (value) {
       case 'Open File':
@@ -72,10 +153,16 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
         _textEditingController.text = text;
         break;
       case 'Save File':
-        FileUtils.saveToFile("Mark", 'First Test');
-        print("Saved");
+         showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return FileNameDialog(save: setFileName,);
+            });
+
+
         break;
       case 'Share File':
+        share();
         break;
     }
   }
@@ -85,15 +172,25 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
 
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
-
-
+          handleClick('Save File');
         }
         ,
-        child: const Icon(Icons.add),
+        child: const Icon(Icons.save),
         backgroundColor: Colors.black,
       ),
       appBar: AppBar(
         actions: <Widget>[
+          IconButton(
+            icon: Icon(
+              Icons.share,
+            ),
+            iconSize: 20,
+            color: Colors.black,
+            splashColor: Colors.black,
+            onPressed: () {
+              handleClick('Share File');
+            },
+          ),
           PopupMenuButton<String>(
             icon: Icon(Icons.more_vert, color: Colors.black,),
             onSelected: handleClick,
