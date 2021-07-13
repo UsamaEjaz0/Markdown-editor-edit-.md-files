@@ -29,8 +29,9 @@ class _MyHomePageState extends State<MyHomePage>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        
         title: Text(
-          "M a r k d o w n",
+          "Markdown",
           style: TextStyle(
             color: Colors.black,
           ),
@@ -41,7 +42,7 @@ class _MyHomePageState extends State<MyHomePage>
         bottom: TabBar(
           unselectedLabelColor: Colors.black,
           indicator: BoxDecoration(
-            borderRadius: BorderRadius.circular(30),
+            borderRadius: BorderRadius.circular(20),
             color: Colors.black,
           ),
           controller: _controller,
