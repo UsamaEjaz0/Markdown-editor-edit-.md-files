@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'utils/file_utils.dart';
 
 class MyHomePage extends StatefulWidget {
   @override
   _MyHomePageState createState() => _MyHomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage>
-    with SingleTickerProviderStateMixin {
+class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateMixin {
   TabController _controller;
   TextEditingController _textEditingController;
   String text = "";
@@ -28,8 +28,20 @@ class _MyHomePageState extends State<MyHomePage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      floatingActionButton: FloatingActionButton(
+        onPressed: () async {
+          FileUtils.saveToFile("Mark", 'First Test');
+          print("Saved");
+
+          print("Reading");
+          print(await FileUtils.readFromFile("Mark"));
+        }
+        ,
+        child: const Icon(Icons.add),
+        backgroundColor: Colors.black,
+      ),
       appBar: AppBar(
-        
+
         title: Text(
           "Markdown",
           style: TextStyle(

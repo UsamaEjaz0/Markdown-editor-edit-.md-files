@@ -30,6 +30,7 @@ dependencies:
   cupertino_icons: ^1.0.0
   flutter_markdown: ^0.5.1
   path_provider: ^2.0.2
+  file_picker: ^3.0.3
 
 dev_dependencies:
   flutter_test:
