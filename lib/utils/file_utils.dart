@@ -3,7 +3,7 @@ import 'dart:io';
 
 class FileUtils {
   static Future<String> get _localPath async {
-    final directory = await getApplicationDocumentsDirectory();
+    final directory = await getExternalStorageDirectory();
 
     return directory.path;
   }

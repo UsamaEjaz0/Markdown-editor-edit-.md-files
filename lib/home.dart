@@ -1,6 +1,9 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'utils/file_utils.dart';
+import 'dart:io';
 
 class MyHomePage extends StatefulWidget {
   @override
@@ -11,6 +14,41 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
   TabController _controller;
   TextEditingController _textEditingController;
   String text = "";
+
+  String _fileName;
+  String _path;
+  Map<String, String> _paths;
+  String _extension;
+  bool _loadingPath = false;
+  bool _multiPick = false;
+  bool _hasValidMime = false;
+  FileType _pickingType;
+
+  Future<void> _openFileExplorer() async {
+    if (_pickingType != FileType.CUSTOM || _hasValidMime) {
+      setState(() => _loadingPath = true);
+      try {
+        if (_multiPick) {
+          _path = null;
+          _paths = await FilePicker.getMultiFilePath(
+              type: _pickingType, fileExtension: _extension);
+        } else {
+          _paths = null;
+          _path = await FilePicker.getFilePath(
+              type: _pickingType, fileExtension: _extension);
+        }
+      } on PlatformException catch (e) {
+        print("Unsupported operation" + e.toString());
+      }
+      if (!mounted) return;
+      setState(() {
+        _loadingPath = false;
+        _fileName = _path != null
+            ? _path.split('/').last
+            : _paths != null ? _paths.keys.toString() : '...';
+      });
+    }
+  }
 
   @override
   void initState() {
@@ -24,24 +62,52 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
       this.text = text;
     });
   }
-
+  Future<void> handleClick(String value) async {
+    switch (value) {
+      case 'Open File':
+        await _openFileExplorer();
+        final file =  File(_path);
+        String fileContents = await file.readAsString();
+        updateText(fileContents);
+        _textEditingController.text = text;
+        break;
+      case 'Save File':
+        FileUtils.saveToFile("Mark", 'First Test');
+        print("Saved");
+        break;
+      case 'Share File':
+        break;
+    }
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
-          FileUtils.saveToFile("Mark", 'First Test');
-          print("Saved");
 
-          print("Reading");
-          print(await FileUtils.readFromFile("Mark"));
+
         }
         ,
         child: const Icon(Icons.add),
         backgroundColor: Colors.black,
       ),
       appBar: AppBar(
+        actions: <Widget>[
+          PopupMenuButton<String>(
+            icon: Icon(Icons.more_vert, color: Colors.black,),
+            onSelected: handleClick,
+            itemBuilder: (BuildContext context) {
+              return {'Open File', 'Save File', 'Share File'}.map((String choice) {
+                return PopupMenuItem<String>(
 
+                  value: choice,
+                  child: Text(choice),
+                );
+              }).toList();
+            },
+          ),
+        ],
         title: Text(
           "Markdown",
           style: TextStyle(
@@ -75,7 +141,9 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
             keyboardType: TextInputType.multiline,
             maxLines: null,
             controller: _textEditingController,
+
             decoration: InputDecoration(
+
                 border: InputBorder.none, hintText: "Write Markdown here..."),
             onChanged: (String text) {
               updateText(text);
@@ -84,7 +152,7 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
         ),
         Container(
           margin: EdgeInsets.all(20),
-          child: Markdown(data: text),
+          child: Markdown(data: text, selectable: true),
         ),
       ]),
     );
