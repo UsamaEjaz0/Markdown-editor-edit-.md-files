@@ -1,9 +1,11 @@
 import 'package:another_flushbar/flushbar.dart';
 import 'package:easy_markdown_editor/dialogs/file_name.dart';
+import 'package:easy_markdown_editor/utils/ad_helper.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_extend/share_extend.dart';
 import 'utils/file_utils.dart';
@@ -27,6 +29,36 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
   String fileName = "file";
   bool shareable = false;
 
+  BannerAd _bannerAd;
+  bool _isBannerAdReady = false;
+  InterstitialAd _interstitialAd;
+  bool _isInterstitialAdReady = false;
+  Future<InitializationStatus> _initGoogleMobileAds() {
+    return MobileAds.instance.initialize();
+  }
+  void _loadInterstitialAd() {
+    InterstitialAd.load(
+      adUnitId: AdHelper.interstitialAdUnitId,
+      request: AdRequest(),
+      adLoadCallback: InterstitialAdLoadCallback(
+        onAdLoaded: (ad) {
+          this._interstitialAd = ad;
+
+          ad.fullScreenContentCallback = FullScreenContentCallback(
+            onAdDismissedFullScreenContent: (ad) {
+              handleClick('Save File');
+            },
+          );
+
+          _isInterstitialAdReady = true;
+        },
+        onAdFailedToLoad: (err) {
+          print('Failed to load an interstitial ad: ${err.message}');
+          _isInterstitialAdReady = false;
+        },
+      ),
+    );
+  }
   Future<void> _openFileExplorer() async {
     if (_pickingType != FileType.CUSTOM || _hasValidMime) {
       try {
@@ -50,6 +82,26 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
     super.initState();
     _controller = TabController(length: 2, vsync: this);
     _textEditingController = TextEditingController();
+    _bannerAd = BannerAd(
+      adUnitId: AdHelper.bannerAdUnitId,
+      request: AdRequest(),
+      size: AdSize.banner,
+      listener: BannerAdListener(
+        onAdLoaded: (_) {
+          setState(() {
+            _isBannerAdReady = true;
+          });
+        },
+        onAdFailedToLoad: (ad, err) {
+          print('Failed to load a banner ad: ${err.message}');
+          _isBannerAdReady = false;
+          ad.dispose();
+        },
+      ),
+    );
+    print(_isBannerAdReady);
+    _bannerAd.load();
+    _loadInterstitialAd();
   }
 
   void updateText(String text) {
@@ -142,8 +194,14 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
 
 
   }
-
+  @override
+  void dispose() {
+    _bannerAd.dispose();
+    _interstitialAd.dispose();
+    super.dispose();
+  }
   Future<void> handleClick(String value) async {
+    print(_isBannerAdReady);
     switch (value) {
       case 'Open File':
         await _openFileExplorer();
@@ -172,7 +230,12 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
 
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
-          handleClick('Save File');
+          if (_isInterstitialAdReady) {
+            _interstitialAd?.show();
+          } else {
+            handleClick('Save File');
+          }
+
         }
         ,
         child: const Icon(Icons.save),
@@ -231,27 +294,47 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
           ],
         ),
       ),
-      body: TabBarView(controller: _controller, children: [
-        Container(
-          margin: EdgeInsets.all(20),
-          child: TextField(
-            keyboardType: TextInputType.multiline,
-            maxLines: null,
-            controller: _textEditingController,
+      body: FutureBuilder<void>(
+        future: _initGoogleMobileAds(),
+      builder: (BuildContext context, AsyncSnapshot<void> snapshot){
+        return Column(
+          children: [
+            if (_isBannerAdReady)
+              Align(
+                alignment: Alignment.topCenter,
+                child: Container(
+                  width: _bannerAd.size.width.toDouble(),
+                  height: _bannerAd.size.height.toDouble(),
+                  child: AdWidget(ad: _bannerAd),
+                ),
+              ),
+            Expanded(
+              child: TabBarView(controller: _controller, children: [
+                Container(
+                  margin: EdgeInsets.all(20),
+                  child: TextField(
+                    keyboardType: TextInputType.multiline,
+                    maxLines: null,
+                    controller: _textEditingController,
 
-            decoration: InputDecoration(
+                    decoration: InputDecoration(
 
-                border: InputBorder.none, hintText: "Write Markdown here..."),
-            onChanged: (String text) {
-              updateText(text);
-            },
-          ),
-        ),
-        Container(
-          margin: EdgeInsets.all(20),
-          child: Markdown(data: text, selectable: true),
-        ),
-      ]),
+                        border: InputBorder.none, hintText: "Write Markdown here..."),
+                    onChanged: (String text) {
+                      updateText(text);
+                    },
+                  ),
+                ),
+                Container(
+                  margin: EdgeInsets.all(20),
+                  child: Markdown(data: text, selectable: true),
+                ),
+              ]),
+            ),
+
+          ],
+        );},
+      ),
     );
   }
 }

@@ -39,7 +39,7 @@ class _FileNameDialogState extends State<FileNameDialog> {
       children: <Widget>[
         Container(
           width: SizeConfig.safeBlockHorizontal * 92,
-          height: SizeConfig.safeBlockVertical * 20,
+           height: SizeConfig.safeBlockVertical * 25,
           decoration: BoxDecoration(
             shape: BoxShape.rectangle,
             color: Colors.white,
