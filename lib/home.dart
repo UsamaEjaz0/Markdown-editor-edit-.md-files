@@ -1,11 +1,12 @@
 import 'package:another_flushbar/flushbar.dart';
-import 'package:easy_markdown_editor/dialogs/file_name.dart';
-import 'package:easy_markdown_editor/utils/ad_helper.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:easy_markdown_editor/dialogs/file_name.dart';
+import 'package:easy_markdown_editor/utils/ad_helper.dart';
+import 'package:easy_markdown_editor/utils/app_config.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_extend/share_extend.dart';
 import 'utils/file_utils.dart';
@@ -33,6 +34,7 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
   bool _isBannerAdReady = false;
   InterstitialAd _interstitialAd;
   bool _isInterstitialAdReady = false;
+
   Future<InitializationStatus> _initGoogleMobileAds() {
     return MobileAds.instance.initialize();
   }
@@ -100,6 +102,7 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
       ),
     );
     print(_isBannerAdReady);
+    print(_isInterstitialAdReady);
     _bannerAd.load();
     _loadInterstitialAd();
   }
@@ -211,12 +214,12 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
         _textEditingController.text = text;
         break;
       case 'Save File':
+
          showDialog(
             context: context,
             builder: (BuildContext context) {
               return FileNameDialog(save: setFileName,);
             });
-
 
         break;
       case 'Share File':
@@ -226,20 +229,25 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
   }
   @override
   Widget build(BuildContext context) {
+    SizeConfig().init(context);
     return Scaffold(
+      floatingActionButton: Padding(
+        padding: EdgeInsets.only(bottom: _bannerAd.size.height.toDouble()),
+        child: FloatingActionButton(
+          onPressed: () async {
+            if (_isInterstitialAdReady) {
+              _interstitialAd?.show();
+              _isInterstitialAdReady = false;
+            } else {
+              handleClick('Save File');
+              _loadInterstitialAd();
+            }
 
-      floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          if (_isInterstitialAdReady) {
-            _interstitialAd?.show();
-          } else {
-            handleClick('Save File');
           }
-
-        }
-        ,
-        child: const Icon(Icons.save),
-        backgroundColor: Colors.black,
+          ,
+          child: const Icon(Icons.save),
+          backgroundColor: Colors.black,
+        ),
       ),
       appBar: AppBar(
         actions: <Widget>[
@@ -295,19 +303,11 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
         ),
       ),
       body: FutureBuilder<void>(
-        future: _initGoogleMobileAds(),
+        // future: _initGoogleMobileAds(),
       builder: (BuildContext context, AsyncSnapshot<void> snapshot){
         return Column(
           children: [
-            if (_isBannerAdReady)
-              Align(
-                alignment: Alignment.topCenter,
-                child: Container(
-                  width: _bannerAd.size.width.toDouble(),
-                  height: _bannerAd.size.height.toDouble(),
-                  child: AdWidget(ad: _bannerAd),
-                ),
-              ),
+
             Expanded(
               child: TabBarView(controller: _controller, children: [
                 Container(
@@ -331,7 +331,18 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
                 ),
               ]),
             ),
-
+            if (_isBannerAdReady)
+              Align(
+                alignment: Alignment.topCenter,
+                child: Container(
+                  width: _bannerAd.size.width.toDouble(),
+                  height: _bannerAd.size.height.toDouble(),
+                  child: AdWidget(ad: _bannerAd),
+                ),
+              ),
+            SizedBox(
+              height: 10,
+            )
           ],
         );},
       ),

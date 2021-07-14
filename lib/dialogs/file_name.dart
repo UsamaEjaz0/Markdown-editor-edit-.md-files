@@ -1,8 +1,8 @@
 import 'dart:ui';
 import 'package:another_flushbar/flushbar.dart';
-import 'package:easy_markdown_editor/utils/app_config.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:easy_markdown_editor/utils/app_config.dart';
 
 // ignore: must_be_immutable
 class FileNameDialog extends StatefulWidget {
